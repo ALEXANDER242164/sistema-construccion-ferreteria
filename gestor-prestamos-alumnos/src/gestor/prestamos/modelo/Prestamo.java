@@ -25,15 +25,17 @@ public final class Prestamo {
      * @param id identificador único, mayor que cero
      * @param herramienta herramienta prestada; no puede ser nula
      * @param prestatario persona que recibe la herramienta; no puede estar vacío
-     * @param fechaPrestamo fecha en que se presta la herramienta
-     * @param fechaLimite fecha máxima de devolución; no puede ser anterior al préstamo
+     * @param periodo periodo del préstamo, con las fechas de inicio y límite
      * @param fechaDevolucion fecha real de devolución, o nula si sigue activo
      * @param diasRetraso días de retraso registrados en la devolución; no negativo
      * @param penalizacion penalización cobrada en euros; no negativa
      * @throws IllegalArgumentException si alguno de los datos no es válido
      */
-    public Prestamo(int id, Herramienta herramienta, String prestatario, LocalDate fechaPrestamo,
-                    LocalDate fechaLimite, LocalDate fechaDevolucion, int diasRetraso, double penalizacion) {
+    // TECNICA: Introduce Parameter Object
+    // Se pasa el objeto PeriodoPrestamo para recuperar las fechas de inicio y limite del prestamo.
+    // Ahora viajan juntas en el objeto, antes se pasaba cada una como parametro
+    public Prestamo(int id, Herramienta herramienta, String prestatario, PeriodoPrestamo periodo,
+                    LocalDate fechaDevolucion, int diasRetraso, double penalizacion) {
         if (id <= 0) {
             throw new IllegalArgumentException("El id del préstamo debe ser positivo");
         }
@@ -43,13 +45,13 @@ public final class Prestamo {
         if (prestatario == null || prestatario.isBlank()) {
             throw new IllegalArgumentException("El prestatario es obligatorio");
         }
-        if (fechaPrestamo == null || fechaLimite == null) {
+        if (periodo.getFechaPrestamo() == null || periodo.getFechaLimite() == null) {
             throw new IllegalArgumentException("Las fechas de préstamo y límite son obligatorias");
         }
-        if (fechaLimite.isBefore(fechaPrestamo)) {
+        if (periodo.getFechaLimite().isBefore(periodo.getFechaPrestamo())) {
             throw new IllegalArgumentException("La fecha límite no puede ser anterior al préstamo");
         }
-        if (fechaDevolucion != null && fechaDevolucion.isBefore(fechaPrestamo)) {
+        if (fechaDevolucion != null && fechaDevolucion.isBefore(periodo.getFechaPrestamo())) {
             throw new IllegalArgumentException("La devolución no puede ser anterior al préstamo");
         }
         if (diasRetraso < 0 || penalizacion < 0) {
@@ -58,8 +60,8 @@ public final class Prestamo {
         this.id = id;
         this.herramienta = herramienta;
         this.prestatario = prestatario.trim();
-        this.fechaPrestamo = fechaPrestamo;
-        this.fechaLimite = fechaLimite;
+        this.fechaPrestamo = periodo.getFechaPrestamo();
+        this.fechaLimite = periodo.getFechaLimite();
         this.fechaDevolucion = fechaDevolucion;
         this.diasRetraso = diasRetraso;
         this.penalizacion = penalizacion;
@@ -115,18 +117,15 @@ public final class Prestamo {
     }
 
     /**
-     * Registra la devoluconn de la herramienta, calculando
-     * los dias de retraso y la penalizacinn correspondiente.
+     * Registra la fecha de devolución de la herramienta.
      *
-     * Move Method
-     * REFACTOR: Se mueve el calculo de la penalizacion desde
-     * GestorPrestamos hacia Prestamo, porque esta clase
-     * contiene las fechas y los datos necesarios para calcularla.
-     *
-     * @param fecha fecha real de devolucion
-     * @param penalizacionPorDia importe por cada dia de retraso
+     * @param fecha fecha real de devolución; no puede ser anterior al préstamo
+     * @throws IllegalStateException si el préstamo ya estaba devuelto
+     * @throws IllegalArgumentException si la fecha es nula o anterior al préstamo
      */
-    public void registrarDevolucion(LocalDate fecha, double penalizacionPorDia) {
+    // Se elimina el parametro penalizacionorDia porque el metodo unca lo usaba
+    // El calculo del retraso y la penalizacion lo hace GestorPrestamos.devolver()
+    public void registrarDevolucion(LocalDate fecha) {
         if (!estaActivo()) {
             throw new IllegalStateException("El préstamo ya fue devuelto");
         }

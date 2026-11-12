@@ -1,8 +1,8 @@
 package gestor.prestamos.persistencia;
 
 import gestor.prestamos.modelo.Herramienta;
+import gestor.prestamos.modelo.PeriodoPrestamo;
 import gestor.prestamos.modelo.Prestamo;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -126,7 +126,13 @@ public final class RepositorioCsv {
 
     private Herramienta parsearHerramienta(String linea, int numeroLinea) throws IOException {
         List<String> campos = CsvUtil.dividir(linea);
-        if (campos.size() < CAMPOS_HERRAMIENTA || campos.size() > CAMPOS_HERRAMIENTA + 1) {
+
+        //usamos dos variables para calrar mejor la expresion en la condicion
+        boolean faltancampos= campos.size() < CAMPOS_HERRAMIENTA; //calcula si hace falta herraminetas 
+
+        boolean sobranCampos = campos.size() > CAMPOS_HERRAMIENTA + 1; // calcula si spbre herramientas
+        
+        if (faltancampos || sobranCampos) {
             throw error(ARCHIVO_HERRAMIENTAS, numeroLinea, "se esperaban " + CAMPOS_HERRAMIENTA + " campos");
         }
         try {
@@ -157,7 +163,9 @@ public final class RepositorioCsv {
             LocalDate devolucion = textoDevolucion.isEmpty() ? null : LocalDate.parse(textoDevolucion);
             int diasRetraso = Integer.parseInt(campos.get(6).trim());
             double penalizacion = Double.parseDouble(campos.get(7).trim());
-            return new Prestamo(id, herramienta, campos.get(2), inicio, limite, devolucion, diasRetraso, penalizacion);
+            // Se usa el objeto PeriodoPrestamo para guardar las fechas y viajen juntas cuando se requiera
+            PeriodoPrestamo periodo = new PeriodoPrestamo(inicio, limite);
+            return new Prestamo(id, herramienta, campos.get(2), periodo, devolucion, diasRetraso, penalizacion);
         } catch (IllegalArgumentException | DateTimeException e) {
             throw error(ARCHIVO_PRESTAMOS, numeroLinea, e.getMessage());
         }
