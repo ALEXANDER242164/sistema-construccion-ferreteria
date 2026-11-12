@@ -135,11 +135,20 @@ public final class Prestamo {
         if (fecha.isBefore(fechaPrestamo)) {
             throw new IllegalArgumentException("La devolución no puede ser anterior al préstamo");
         }
+
         this.fechaDevolucion = fecha;
+
+        long retraso = Math.max(0,
+                ChronoUnit.DAYS.between(fechaLimite, fecha));
+
+        this.diasRetraso = (int) retraso;
+
+        this.penalizacion = Math.round(
+                retraso * penalizacionPorDia * 100.0) / 100.0;
     }
 
     /**
-     * Establece los días de retraso registrados en la devolución.
+     * Establece los dias de retraso registrados en la devolución.
      *
      * @param diasRetraso días de retraso, no negativos
      */
