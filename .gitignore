@@ -1,2 +1,10 @@
 /gestor-prestamos-alumnos/prueba/
 /gestor-prestamos-alumnos/out/
+/docs/gestor-prestamos-original/gestor-prestamos-alumnos/prueba/
+/docs/gestor-prestamos-original/gestor-prestamos-alumnos/out/
+
+# Scripts locales (no se suben)
+*.sh
+*.ps1
+*.bat
+*.cmd
