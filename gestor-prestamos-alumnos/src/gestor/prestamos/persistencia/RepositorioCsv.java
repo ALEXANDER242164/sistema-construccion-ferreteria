@@ -126,7 +126,13 @@ public final class RepositorioCsv {
 
     private Herramienta parsearHerramienta(String linea, int numeroLinea) throws IOException {
         List<String> campos = CsvUtil.dividir(linea);
-        if (campos.size() < CAMPOS_HERRAMIENTA || campos.size() > CAMPOS_HERRAMIENTA + 1) {
+
+        //usamos dos variables para calrar mejor la expresion en la condicion
+        boolean faltancampos= campos.size() < CAMPOS_HERRAMIENTA; //calcula si hace falta herraminetas 
+
+        boolean sobranCampos = campos.size() > CAMPOS_HERRAMIENTA + 1; // calcula si spbre herramientas
+        
+        if (faltancampos || sobranCampos) {
             throw error(ARCHIVO_HERRAMIENTAS, numeroLinea, "se esperaban " + CAMPOS_HERRAMIENTA + " campos");
         }
         try {
