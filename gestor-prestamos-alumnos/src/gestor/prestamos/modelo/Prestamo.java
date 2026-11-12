@@ -117,14 +117,15 @@ public final class Prestamo {
     }
 
     /**
-     * Registra la devolución de la herramienta, calculando el retraso y la penalización.
+     * Registra la fecha de devolución de la herramienta.
      *
      * @param fecha fecha real de devolución; no puede ser anterior al préstamo
-     * @param penalizacionPorDia importe en euros por cada día de retraso
      * @throws IllegalStateException si el préstamo ya estaba devuelto
      * @throws IllegalArgumentException si la fecha es nula o anterior al préstamo
      */
-    public void registrarDevolucion(LocalDate fecha, double penalizacionPorDia) {
+    // Se elimina el parametro penalizacionorDia porque el metodo unca lo usaba
+    // El calculo del retraso y la penalizacion lo hace GestorPrestamos.devolver()
+    public void registrarDevolucion(LocalDate fecha) {
         if (!estaActivo()) {
             throw new IllegalStateException("El préstamo ya fue devuelto");
         }
