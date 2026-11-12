@@ -167,24 +167,39 @@ public final class GestorPrestamos {
     }
 
     /**
-     * Registra la devolución de un préstamo activo y calcula su penalización.
+     * Registra la devolución de un préstamo activo y calcula su retraso y su penalización.
+     * Este método solo modifica el estado y no devuelve nada; para consultar el préstamo
+     * ya actualizado se usa {@link #buscarPrestamo(int)}.
      *
      * @param prestamoId identificador del préstamo
      * @param fecha fecha real de devolución
-     * @return el préstamo actualizado
      * @throws IllegalArgumentException si el préstamo no existe o la fecha no es válida
      * @throws IllegalStateException si el préstamo ya estaba devuelto
      */
-    public Prestamo devolver(int prestamoId, LocalDate fecha) {
-        Prestamo prestamo = prestamos.stream()
-                .filter(p -> p.getId() == prestamoId)
-                .findFirst()
+    // Tenica: Separate Query from Modifier
+    // Antes devolver() hacía dos cosas, modificaba el préstamo (registraba la devolución, el retraso y la penalización) 
+    // y además lo devolvía como resultado (return prestamo). Ahora es solo un modificador (void). La consulta del préstamo se separo en el
+    // método buscarPrestamo(), que este mismo método reutiliza para localizarlo
+    public void devolver(int prestamoId, LocalDate fecha) {
+        Prestamo prestamo = buscarPrestamo(prestamoId)
                 .orElseThrow(() -> new IllegalArgumentException("No existe el préstamo con ID " + prestamoId));
         prestamo.registrarDevolucion(fecha, PENALIZACION_POR_DIA);
         long retraso = Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(prestamo.getFechaLimite(), fecha));
         prestamo.setDiasRetraso((int) retraso);
         prestamo.setPenalizacion(Math.round(retraso * PENALIZACION_POR_DIA * 100.0) / 100.0);
-        return prestamo;
+    }
+
+    /**
+     * Busca un préstamo por su identificador, sin modificar nada.
+     *
+     * @param id identificador del préstamo
+     * @return el préstamo si existe, o un Optional vacío
+     */
+    // Tecnica: Separate Query from Modifier
+    // Consulta separada de devolver(). Al no tener efectos secundarios, puede llamarse
+    // cuantas veces se necesite, devuelve un opttional
+    public Optional<Prestamo> buscarPrestamo(int id) {
+        return prestamos.stream().filter(p -> p.getId() == id).findFirst();
     }
 
     /**
