@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Menú principal de la aplicación. Muestra las opciones, pide los datos necesarios
+ * Menú principal de la aplicación. Muestra las opciones, pide los datos
+ * necesarios
  * y delega las operaciones en el servicio. Tras cada cambio, guarda los datos.
  */
 public final class MenuConsola {
@@ -41,9 +42,9 @@ public final class MenuConsola {
     /**
      * Crea el menú con sus dependencias.
      *
-     * @param gestor servicio de préstamos
+     * @param gestor      servicio de préstamos
      * @param repositorio repositorio donde se guardan los datos
-     * @param entrada lectura de datos desde la consola
+     * @param entrada     lectura de datos desde la consola
      */
     public MenuConsola(GestorPrestamos gestor, RepositorioCsv repositorio, Entrada entrada) {
         this.gestor = gestor;
@@ -216,6 +217,34 @@ public final class MenuConsola {
         }
     }
 
+    /**
+     * Muestra la situación actual de un préstamo activo, indicando si está al día
+     * o atrasado junto con la penalización estimada.
+     *
+     * @param p préstamo activo que se va a mostrar
+     */
+    private void situacionPrestamo(Prestamo p) {
+        String situacion;
+        //TECNICA: Replace Temp with Query
+        //Se cambian referencias de hoy que era una variable temporal al metodo query diaActual()
+        //El query es usado por otros metodos, ya no es necesario que cada uno tenga su variable temporal
+        if (p.estado(diaActual()) == EstadoPrestamo.ATRASADO) {
+            long dias = p.getDiasRetrasoA(diaActual());
+            double estimada = p.calcularPenalizacion(diaActual(), GestorPrestamos.PENALIZACION_POR_DIA);
+            situacion = String.format("ATRASADO %d día(s), penalización estimada %.2f €", dias, estimada);
+        } else {
+            situacion = "Al día, vence " + p.getFechaLimite();
+        }
+        System.out.printf("    %s - %s | desde %s | %s%n",
+                p.getHerramienta().getNombre(), p.getPrestatario(), p.getFechaPrestamo(), situacion);
+    }
+
+    /**
+     * Muestra todos los préstamos que aún no han sido devueltos.
+     *
+     * <p>La evaluación de la situación se delega en {@link #situacionPrestamo(Prestamo)}
+     * para mantener separada la condición de listado de la presentación de cada préstamo.</p>
+     */
     private void verPrestamosActivos() {
         List<Prestamo> activos = gestor.prestamosActivos();
         if (activos.isEmpty()) {
@@ -224,19 +253,7 @@ public final class MenuConsola {
         }
         System.out.println("\n  Préstamos activos:");
         for (Prestamo p : activos) {
-            String situacion;
-            //TECNICA: Replace Temp with Query
-            //Se cambian referencias de hoy que era una variable temporal al metodo query diaActual()
-            //El query es usado por otros metodos, ya no es necesario que cada uno tenga su variable temporal
-            if (p.estado(diaActual()) == EstadoPrestamo.ATRASADO) {
-                long dias = p.getDiasRetrasoA(diaActual());
-                double estimada = p.calcularPenalizacion(diaActual(), GestorPrestamos.PENALIZACION_POR_DIA);
-                situacion = String.format("ATRASADO %d día(s), penalización estimada %.2f €", dias, estimada);
-            } else {
-                situacion = "Al día, vence " + p.getFechaLimite();
-            }
-            System.out.printf("    %s - %s | desde %s | %s%n",
-                    p.getHerramienta().getNombre(), p.getPrestatario(), p.getFechaPrestamo(), situacion);
+            situacionPrestamo(p);
         }
     }
 
