@@ -118,13 +118,14 @@ public final class Prestamo {
 
     /**
      * Registra la fecha de devolución de la herramienta.
+     * El cálculo de la penalización se realiza en
+     * {@code GestorPrestamos.devolver(...)} con la tarifa definida por el servicio;
+     * este método solo actualiza la fecha y los días de retraso.
      *
      * @param fecha fecha real de devolución; no puede ser anterior al préstamo
      * @throws IllegalStateException si el préstamo ya estaba devuelto
      * @throws IllegalArgumentException si la fecha es nula o anterior al préstamo
      */
-    // Se elimina el parametro penalizacionorDia porque el metodo unca lo usaba
-    // El calculo del retraso y la penalizacion lo hace GestorPrestamos.devolver()
     public void registrarDevolucion(LocalDate fecha) {
         if (!estaActivo()) {
             throw new IllegalStateException("El préstamo ya fue devuelto");
@@ -142,9 +143,6 @@ public final class Prestamo {
                 ChronoUnit.DAYS.between(fechaLimite, fecha));
 
         this.diasRetraso = (int) retraso;
-
-        this.penalizacion = Math.round(
-                retraso * penalizacionPorDia * 100.0) / 100.0;
     }
 
     /**

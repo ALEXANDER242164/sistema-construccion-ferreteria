@@ -165,14 +165,9 @@ public final class MenuConsola {
         guardar();
         System.out.printf("  Herramienta '%s' añadida con ID %d.%n", nueva.getNombre(), nueva.getId());
     }
-
-
     /**
-     * Extract Method
-     * REFACTOR : Se divide el proceso de prestamo en metodos mas chiquitos para separar
-     * la seleccion de la herramienta, la solicitud de fechas y el registro
+     * Coordina el proceso completo para registrar un préstamo.
      */
-
     private void prestar() {
         List<Herramienta> disponibles = gestor.herramientasDisponibles();
 
@@ -190,9 +185,8 @@ public final class MenuConsola {
         registrarPrestamo(id, prestatario, inicio, limite);
     }
 
-
     /**
-     * Muestra las herramientas disponibles y solicita cual se quiere prestar
+     * Muestra las herramientas disponibles y solicita cuál se quiere prestar.
      *
      * @param disponibles herramientas que pueden prestarse
      * @return ID de la herramienta seleccionada
@@ -206,15 +200,48 @@ public final class MenuConsola {
                     herramienta.getId(), herramienta.getNombre());
         }
         List<Integer> ids = disponibles.stream().map(Herramienta::getId).toList();
-        int id = entrada.pedirOpcion("ID de la herramienta: ", ids);
-        String prestatario = entrada.pedirTexto("Nombre de quien la recibe: ");
-        
-        LocalDate inicio = entrada.pedirFecha("Fecha de préstamo (AAAA-MM-DD, Enter = " + diaActual() + "): ", diaActual());
+        return entrada.pedirOpcion("ID de la herramienta: ", ids);
+    }
+
+    /**
+     * Solicita la fecha de inicio del préstamo usando la fecha actual como valor
+     * predeterminado.
+     *
+     * @return fecha de inicio introducida o la fecha actual
+     */
+    private LocalDate pedirFechaInicio() {
+        return entrada.pedirFecha(
+                "Fecha de préstamo (AAAA-MM-DD, Enter = " + diaActual() + "): ",
+                diaActual());
+    }
+
+    /**
+     * Solicita la fecha límite del préstamo usando la duración predeterminada.
+     *
+     * @param inicio fecha de inicio del préstamo
+     * @return fecha límite introducida o la fecha calculada por defecto
+     */
+    private LocalDate pedirFechaLimite(LocalDate inicio) {
         LocalDate limitePorDefecto = inicio.plusDays(GestorPrestamos.DIAS_PRESTAMO_DEFECTO);
-        LocalDate limite = entrada.pedirFecha(
-                "Fecha límite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ", limitePorDefecto);
-        
-        // Se usa el objeto PeriodoPrestamo para guardar las fechas y viajen juntas cuando se requiera
+
+        return entrada.pedirFecha(
+                "Fecha límite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ",
+                limitePorDefecto);
+    }
+
+    /**
+     * Registra y persiste un préstamo con sus fechas.
+     *
+     * @param id identificador de la herramienta
+     * @param prestatario persona que recibe la herramienta
+     * @param inicio fecha de inicio del préstamo
+     * @param limite fecha límite del préstamo
+     */
+    private void registrarPrestamo(
+            int id,
+            String prestatario,
+            LocalDate inicio,
+            LocalDate limite) {
         PeriodoPrestamo periodo = new PeriodoPrestamo(inicio, limite);
         Prestamo nuevo = gestor.prestar(id, prestatario, periodo);
         guardar();
@@ -224,7 +251,6 @@ public final class MenuConsola {
                 nuevo.getPrestatario(),
                 nuevo.getFechaLimite());
     }
-
 
     private void devolver() {
         List<Prestamo> activos = gestor.prestamosActivos();
