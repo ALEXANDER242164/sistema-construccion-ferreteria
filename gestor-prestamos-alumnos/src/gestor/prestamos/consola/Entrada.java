@@ -98,8 +98,7 @@ public final class Entrada {
      * @return {@code true} si el texto representa una fecha existente con formato AAAA-MM-DD
      */
     // Tecnica: Replace Exception with Test
-    // Este es el "test" que sustituye a la excepción. No basta con revisar el formato:
-    // también se comprueba que el mes y el día existan, porque si se dejara pasar una
+    // Este es el test que sustituye a la excepción. No solo se revisa el formato, también se comprueba que el mes y el día existan, porque si se dejara pasar una
     // fecha como 2026-02-30, LocalDate.parse() lanzaría una excepción que nadie captura.
     private static boolean esFechaValida(String texto) {
         if (!FORMATO_FECHA.matcher(texto).matches()) {

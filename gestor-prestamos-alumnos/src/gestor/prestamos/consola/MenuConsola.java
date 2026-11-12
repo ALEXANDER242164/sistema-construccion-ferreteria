@@ -206,7 +206,12 @@ public final class MenuConsola {
 
         LocalDate fecha = entrada.pedirFecha("Fecha de devolución (AAAA-MM-DD, Enter = " + diaActual() + "): ", diaActual());
 
-        Prestamo devuelto = gestor.devolver(id, fecha);
+        // Tecnica: Separate Query from Modifier
+        // Antes se hacía todo en una llamada: Prestamo devuelto = gestor.devolver(id, fecha);
+        // Ahora primero se llama al modificador, que registra la devolución y no devuelve nada,
+        // y después a la consulta, que obtiene el préstamo ya actualizado para mostrar el retraso y la penalización. 
+        gestor.devolver(id, fecha);
+        Prestamo devuelto = gestor.buscarPrestamo(id).orElseThrow();
         guardar();
         System.out.println("  Devolución registrada.");
         if (devuelto.getDiasRetraso() > 0) {
