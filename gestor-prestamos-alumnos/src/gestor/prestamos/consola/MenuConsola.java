@@ -2,10 +2,10 @@ package gestor.prestamos.consola;
 
 import gestor.prestamos.modelo.EstadoPrestamo;
 import gestor.prestamos.modelo.Herramienta;
+import gestor.prestamos.modelo.PeriodoPrestamo;
 import gestor.prestamos.modelo.Prestamo;
 import gestor.prestamos.persistencia.RepositorioCsv;
 import gestor.prestamos.servicio.GestorPrestamos;
-
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -175,14 +175,15 @@ public final class MenuConsola {
         List<Integer> ids = disponibles.stream().map(Herramienta::getId).toList();
         int id = entrada.pedirOpcion("ID de la herramienta: ", ids);
         String prestatario = entrada.pedirTexto("Nombre de quien la recibe: ");
-
-        LocalDate hoy = LocalDate.now();
-        LocalDate inicio = entrada.pedirFecha("Fecha de préstamo (AAAA-MM-DD, Enter = " + hoy + "): ", hoy);
+        
+        LocalDate inicio = entrada.pedirFecha("Fecha de préstamo (AAAA-MM-DD, Enter = " + diaActual() + "): ", diaActual());
         LocalDate limitePorDefecto = inicio.plusDays(GestorPrestamos.DIAS_PRESTAMO_DEFECTO);
         LocalDate limite = entrada.pedirFecha(
                 "Fecha límite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ", limitePorDefecto);
-
-        Prestamo nuevo = gestor.prestar(id, prestatario, inicio, limite);
+        
+        // Se usa el objeto PeriodoPrestamo para guardar las fechas y viajen juntas cuando se requiera
+        PeriodoPrestamo periodo = new PeriodoPrestamo(inicio, limite);
+        Prestamo nuevo = gestor.prestar(id, prestatario, periodo);
         guardar();
         System.out.printf("  '%s' prestada a %s hasta %s.%n",
                 nuevo.getHerramienta().getNombre(), nuevo.getPrestatario(), nuevo.getFechaLimite());
@@ -202,8 +203,7 @@ public final class MenuConsola {
         List<Integer> ids = activos.stream().map(Prestamo::getId).toList();
         int id = entrada.pedirOpcion("ID del préstamo a devolver: ", ids);
 
-        LocalDate hoy = LocalDate.now();
-        LocalDate fecha = entrada.pedirFecha("Fecha de devolución (AAAA-MM-DD, Enter = " + hoy + "): ", hoy);
+        LocalDate fecha = entrada.pedirFecha("Fecha de devolución (AAAA-MM-DD, Enter = " + diaActual() + "): ", diaActual());
 
         Prestamo devuelto = gestor.devolver(id, fecha);
         guardar();
@@ -222,13 +222,15 @@ public final class MenuConsola {
             System.out.println("\n  No hay préstamos activos.");
             return;
         }
-        LocalDate hoy = LocalDate.now();
         System.out.println("\n  Préstamos activos:");
         for (Prestamo p : activos) {
             String situacion;
-            if (p.estado(hoy) == EstadoPrestamo.ATRASADO) {
-                long dias = p.getDiasRetrasoA(hoy);
-                double estimada = p.calcularPenalizacion(hoy, GestorPrestamos.PENALIZACION_POR_DIA);
+            //TECNICA: Replace Temp with Query
+            //Se cambian referencias de hoy que era una variable temporal al metodo query diaActual()
+            //El query es usado por otros metodos, ya no es necesario que cada uno tenga su variable temporal
+            if (p.estado(diaActual()) == EstadoPrestamo.ATRASADO) {
+                long dias = p.getDiasRetrasoA(diaActual());
+                double estimada = p.calcularPenalizacion(diaActual(), GestorPrestamos.PENALIZACION_POR_DIA);
                 situacion = String.format("ATRASADO %d día(s), penalización estimada %.2f €", dias, estimada);
             } else {
                 situacion = "Al día, vence " + p.getFechaLimite();
@@ -260,5 +262,9 @@ public final class MenuConsola {
         } catch (IOException e) {
             System.out.println("  Aviso: no se pudieron guardar los datos: " + e.getMessage());
         }
+    }
+    
+    public LocalDate diaActual() {
+        return LocalDate.now();
     }
 }
