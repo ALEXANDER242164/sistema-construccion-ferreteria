@@ -162,31 +162,103 @@ public final class MenuConsola {
         System.out.printf("  Herramienta '%s' añadida con ID %d.%n", nueva.getNombre(), nueva.getId());
     }
 
+
+    /**
+     * Extract Method
+     * REFACTOR : Se divide el proceso de prestamo en metodos mas chiquitos para separar
+     * la seleccion de la herramienta, la solicitud de fechas y el registro
+     */
+
     private void prestar() {
         List<Herramienta> disponibles = gestor.herramientasDisponibles();
+
         if (disponibles.isEmpty()) {
             System.out.println("\n  No hay herramientas disponibles para prestar.");
             return;
         }
-        System.out.println("\n  Herramientas disponibles:");
-        for (Herramienta herramienta : disponibles) {
-            System.out.printf("    %d. %s%n", herramienta.getId(), herramienta.getNombre());
-        }
-        List<Integer> ids = disponibles.stream().map(Herramienta::getId).toList();
-        int id = entrada.pedirOpcion("ID de la herramienta: ", ids);
+
+        int id = seleccionarHerramienta(disponibles);
         String prestatario = entrada.pedirTexto("Nombre de quien la recibe: ");
 
+        LocalDate inicio = pedirFechaInicio();
+        LocalDate limite = pedirFechaLimite(inicio);
+
+        registrarPrestamo(id, prestatario, inicio, limite);
+    }
+
+
+    /**
+     * Muestra las herramientas disponibles y solicita cual se quiere prestar
+     *
+     * @param disponibles herramientas que pueden prestarse
+     * @return ID de la herramienta seleccionada
+     */
+
+    private int seleccionarHerramienta(List<Herramienta> disponibles) {
+        System.out.println("\n  Herramientas disponibles:");
+
+        for (Herramienta herramienta : disponibles) {
+            System.out.printf("    %d. %s%n",
+                    herramienta.getId(), herramienta.getNombre());
+        }
+
+        List<Integer> ids = disponibles.stream()
+                .map(Herramienta::getId)
+                .toList();
+
+        return entrada.pedirOpcion("ID de la herramienta: ", ids);
+    }
+
+
+    /**
+     * Solicita la fecha en la que se presta la herramienta
+     *
+     * @return fecha de inicio del prestamo
+     */
+    private LocalDate pedirFechaInicio() {
         LocalDate hoy = LocalDate.now();
-        LocalDate inicio = entrada.pedirFecha("Fecha de préstamo (AAAA-MM-DD, Enter = " + hoy + "): ", hoy);
+
+        return entrada.pedirFecha(
+                "Fecha de prestamo (AAAA-MM-DD, Enter = " + hoy + "): ", hoy);
+    }
+
+
+    /**
+     * Solicita la fecha limite deel prestamo
+     *
+     * @param inicio fecha de inicio del préstamo
+     * @return fecha límite del préstamo
+     */
+    private LocalDate pedirFechaLimite(LocalDate inicio) {
         LocalDate limitePorDefecto = inicio.plusDays(GestorPrestamos.DIAS_PRESTAMO_DEFECTO);
-        LocalDate limite = entrada.pedirFecha(
-                "Fecha límite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ", limitePorDefecto);
+
+        return entrada.pedirFecha("Fecha limite (AAAA-MM-DD, Enter = " + limitePorDefecto + "): ",
+                limitePorDefecto
+        );
+    }
+
+
+    /**
+     * Registra el pretamo, guarda los cambios y muestra su resultado.
+     *
+     * @param id identificador de la herramienta
+     * @param prestatario nombre de quien recibe la herramienta
+     * @param inicio fecha de inicio del préstamo
+     * @param limite fecha límite del préstamo
+     */
+
+    private void registrarPrestamo(int id, String prestatario, LocalDate inicio, LocalDate limite) {
 
         Prestamo nuevo = gestor.prestar(id, prestatario, inicio, limite);
+
         guardar();
+
         System.out.printf("  '%s' prestada a %s hasta %s.%n",
-                nuevo.getHerramienta().getNombre(), nuevo.getPrestatario(), nuevo.getFechaLimite());
+                nuevo.getHerramienta().getNombre(),
+                nuevo.getPrestatario(),
+                nuevo.getFechaLimite());
     }
+
 
     private void devolver() {
         List<Prestamo> activos = gestor.prestamosActivos();
