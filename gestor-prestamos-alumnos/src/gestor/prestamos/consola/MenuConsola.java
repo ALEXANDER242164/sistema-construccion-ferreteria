@@ -9,6 +9,7 @@ import gestor.prestamos.servicio.GestorPrestamos;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -38,6 +39,7 @@ public final class MenuConsola {
     private final GestorPrestamos gestor;
     private final RepositorioCsv repositorio;
     private final Entrada entrada;
+    private final Map<Integer, OpcionMenu> opciones;
 
     /**
      * Crea el menú con sus dependencias.
@@ -50,6 +52,15 @@ public final class MenuConsola {
         this.gestor = gestor;
         this.repositorio = repositorio;
         this.entrada = entrada;
+        this.opciones = Map.of(
+                1, new OpcionMenuAccion(this::listarHerramientas),
+                2, new OpcionMenuAccion(this::anadirHerramienta),
+                3, new OpcionMenuAccion(this::prestar),
+                4, new OpcionMenuAccion(this::devolver),
+                5, new OpcionMenuAccion(this::verPrestamosActivos),
+                6, new OpcionMenuAccion(this::verHistorial),
+                7, new OpcionMenuAccion(this::darDeBaja),
+                8, new OpcionMenuAccion(this::reactivar));
     }
 
     /**
@@ -77,19 +88,11 @@ public final class MenuConsola {
      * @return {@code true} si el usuario quiere salir de la aplicación
      */
     private boolean ejecutarOpcion(int opcion) {
-        switch (opcion) {
-            case 1 -> listarHerramientas();
-            case 2 -> anadirHerramienta();
-            case 3 -> prestar();
-            case 4 -> devolver();
-            case 5 -> verPrestamosActivos();
-            case 6 -> verHistorial();
-            case 7 -> darDeBaja();
-            case 8 -> reactivar();
-            default -> {
-                return true;
-            }
+        OpcionMenu opcionMenu = opciones.get(opcion);
+        if (opcionMenu == null) {
+            return true;
         }
+        opcionMenu.ejecutar();
         return false;
     }
 
