@@ -1,8 +1,8 @@
 package gestor.prestamos.servicio;
 
 import gestor.prestamos.modelo.Herramienta;
+import gestor.prestamos.modelo.PeriodoPrestamo;
 import gestor.prestamos.modelo.Prestamo;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -142,13 +142,16 @@ public final class GestorPrestamos {
      *
      * @param herramientaId identificador de la herramienta a prestar
      * @param prestatario persona que recibe la herramienta
-     * @param fechaPrestamo fecha del préstamo
-     * @param fechaLimite fecha máxima de devolución
+     * @param periodo periodo del préstamo, con la fecha de inicio y la fecha límite
      * @return el préstamo creado
      * @throws IllegalArgumentException si la herramienta no existe o los datos no son válidos
      * @throws IllegalStateException si la herramienta ya está prestada
      */
-    public Prestamo prestar(int herramientaId, String prestatario, LocalDate fechaPrestamo, LocalDate fechaLimite) {
+
+    // TECNICA: Introduce Parameter Object
+    // Se pasa el objeto PeriodoPrestamo para recuperar las fechas de inicio y limite del prestamo.
+    // Ahora viajan juntas en el objeto, antes se pasaba cada una como parametro
+    public Prestamo prestar(int herramientaId, String prestatario, PeriodoPrestamo periodo) {
         Herramienta herramienta = buscarHerramienta(herramientaId)
                 .orElseThrow(() -> new IllegalArgumentException("No existe ninguna herramienta con ID " + herramientaId));
         if (herramienta.isDadaDeBaja()) {
@@ -158,30 +161,45 @@ public final class GestorPrestamos {
             throw new IllegalStateException("La herramienta '" + herramienta.getNombre() + "' ya está prestada");
         }
         int siguienteId = prestamos.stream().mapToInt(Prestamo::getId).max().orElse(0) + 1;
-        Prestamo nuevo = new Prestamo(siguienteId, herramienta, prestatario, fechaPrestamo, fechaLimite, null, 0, 0.0);
+        Prestamo nuevo = new Prestamo(siguienteId, herramienta, prestatario, periodo, null, 0, 0.0);
         prestamos.add(nuevo);
         return nuevo;
     }
 
     /**
-     * Registra la devolución de un préstamo activo y calcula su penalización.
+     * Registra la devolución de un préstamo activo y calcula su retraso y su penalización.
+     * Este método solo modifica el estado y no devuelve nada; para consultar el préstamo
+     * ya actualizado se usa {@link #buscarPrestamo(int)}.
      *
      * @param prestamoId identificador del préstamo
      * @param fecha fecha real de devolución
-     * @return el préstamo actualizado
      * @throws IllegalArgumentException si el préstamo no existe o la fecha no es válida
      * @throws IllegalStateException si el préstamo ya estaba devuelto
      */
-    public Prestamo devolver(int prestamoId, LocalDate fecha) {
-        Prestamo prestamo = prestamos.stream()
-                .filter(p -> p.getId() == prestamoId)
-                .findFirst()
+    // Tenica: Separate Query from Modifier
+    // Antes devolver() hacía dos cosas, modificaba el préstamo (registraba la devolución, el retraso y la penalización) 
+    // y además lo devolvía como resultado (return prestamo). Ahora es solo un modificador (void). La consulta del préstamo se separo en el
+    // método buscarPrestamo(), que este mismo método reutiliza para localizarlo
+    public void devolver(int prestamoId, LocalDate fecha) {
+        Prestamo prestamo = buscarPrestamo(prestamoId)
                 .orElseThrow(() -> new IllegalArgumentException("No existe el préstamo con ID " + prestamoId));
-        prestamo.registrarDevolucion(fecha, PENALIZACION_POR_DIA);
+        prestamo.registrarDevolucion(fecha);
         long retraso = Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(prestamo.getFechaLimite(), fecha));
         prestamo.setDiasRetraso((int) retraso);
         prestamo.setPenalizacion(Math.round(retraso * PENALIZACION_POR_DIA * 100.0) / 100.0);
-        return prestamo;
+    }
+
+    /**
+     * Busca un préstamo por su identificador, sin modificar nada.
+     *
+     * @param id identificador del préstamo
+     * @return el préstamo si existe, o un Optional vacío
+     */
+    // Tecnica: Separate Query from Modifier
+    // Consulta separada de devolver(). Al no tener efectos secundarios, puede llamarse
+    // cuantas veces se necesite, devuelve un opttional
+    public Optional<Prestamo> buscarPrestamo(int id) {
+        return prestamos.stream().filter(p -> p.getId() == id).findFirst();
     }
 
     /**
