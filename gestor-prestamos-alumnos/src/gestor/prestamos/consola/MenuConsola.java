@@ -163,15 +163,44 @@ public final class MenuConsola {
         System.out.printf("  Herramienta '%s' añadida con ID %d.%n", nueva.getNombre(), nueva.getId());
     }
 
+
+    /**
+     * Extract Method
+     * REFACTOR : Se divide el proceso de prestamo en metodos mas chiquitos para separar
+     * la seleccion de la herramienta, la solicitud de fechas y el registro
+     */
+
     private void prestar() {
         List<Herramienta> disponibles = gestor.herramientasDisponibles();
+
         if (disponibles.isEmpty()) {
             System.out.println("\n  No hay herramientas disponibles para prestar.");
             return;
         }
+
+        int id = seleccionarHerramienta(disponibles);
+        String prestatario = entrada.pedirTexto("Nombre de quien la recibe: ");
+
+        LocalDate inicio = pedirFechaInicio();
+        LocalDate limite = pedirFechaLimite(inicio);
+
+        registrarPrestamo(id, prestatario, inicio, limite);
+    }
+
+
+    /**
+     * Muestra las herramientas disponibles y solicita cual se quiere prestar
+     *
+     * @param disponibles herramientas que pueden prestarse
+     * @return ID de la herramienta seleccionada
+     */
+
+    private int seleccionarHerramienta(List<Herramienta> disponibles) {
         System.out.println("\n  Herramientas disponibles:");
+
         for (Herramienta herramienta : disponibles) {
-            System.out.printf("    %d. %s%n", herramienta.getId(), herramienta.getNombre());
+            System.out.printf("    %d. %s%n",
+                    herramienta.getId(), herramienta.getNombre());
         }
         List<Integer> ids = disponibles.stream().map(Herramienta::getId).toList();
         int id = entrada.pedirOpcion("ID de la herramienta: ", ids);
@@ -186,9 +215,13 @@ public final class MenuConsola {
         PeriodoPrestamo periodo = new PeriodoPrestamo(inicio, limite);
         Prestamo nuevo = gestor.prestar(id, prestatario, periodo);
         guardar();
+
         System.out.printf("  '%s' prestada a %s hasta %s.%n",
-                nuevo.getHerramienta().getNombre(), nuevo.getPrestatario(), nuevo.getFechaLimite());
+                nuevo.getHerramienta().getNombre(),
+                nuevo.getPrestatario(),
+                nuevo.getFechaLimite());
     }
+
 
     private void devolver() {
         List<Prestamo> activos = gestor.prestamosActivos();
